@@ -28,5 +28,11 @@ locals {
 #   # ...
 # }
 
-variable "state_bucket" { type = string }
-variable "region"       { type = string, default = "us-west-2" }
+variable "state_bucket" {
+  type = string
+}
+
+variable "region" {
+  type    = string
+  default = "us-west-2"
+}

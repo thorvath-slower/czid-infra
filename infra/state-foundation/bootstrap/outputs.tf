@@ -25,3 +25,14 @@ output "backend_hcl" {
     encrypt        = true
   EOT
 }
+
+# DR (only populated when enable_dr = true).
+output "dr_state_bucket" {
+  description = "DR replica bucket name (null when DR is disabled)."
+  value       = var.enable_dr ? aws_s3_bucket.tfstate_dr[0].bucket : null
+}
+
+output "dr_kms_key_arn" {
+  description = "DR-region KMS key ARN (null when DR is disabled)."
+  value       = var.enable_dr ? aws_kms_key.tfstate_dr[0].arn : null
+}

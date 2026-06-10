@@ -46,6 +46,45 @@ output "openbao_address" {
 output "ecr_registry_url" {
   value = module.registries.ecr_url
 }
+output "ecr_repository_urls" {
+  value = module.registries.ecr_repository_urls
+}
 output "codeartifact_endpoint" {
   value = module.registries.codeartifact_endpoint
+}
+output "codeartifact_domain" {
+  value = module.registries.codeartifact_domain
+}
+
+# --- Additional inheritance values (appended; contract above is unchanged) ---
+# Cluster wiring for GitOps (Argo CD cluster registration / kubeconfig).
+output "eks_cluster_ca_data" {
+  description = "Base64 cluster CA."
+  value       = module.eks.cluster_certificate_authority_data
+}
+output "eks_oidc_provider_url" {
+  description = "OIDC issuer host (for IRSA conditions in downstream stacks)."
+  value       = module.eks.oidc_provider_url
+}
+output "eks_cluster_security_group_id" {
+  value = module.eks.cluster_security_group_id
+}
+
+# OpenBao auto-unseal infra (consumed by the secrets workstream).
+output "openbao_unseal_kms_key_arn" {
+  value = module.openbao.unseal_kms_key_arn
+}
+output "openbao_unseal_role_arn" {
+  value = module.openbao.unseal_role_arn
+}
+
+# GitHub OIDC + account context.
+output "github_oidc_provider_arn" {
+  value = aws_iam_openid_connect_provider.github.arn
+}
+output "region" {
+  value = var.region
+}
+output "account_id" {
+  value = local.account_id
 }

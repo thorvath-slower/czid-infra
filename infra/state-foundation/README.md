@@ -86,28 +86,38 @@ Same foundation/inheritance pattern either way — only the `backend.hcl` change
 | Path | Purpose |
 |------|---------|
 | `bootstrap/`                         | Creates the shared bucket, lock table, KMS key (run once). |
+| `bootstrap/dr.tf`                    | Cross-region replication for region-loss DR, gated behind `enable_dr` (off by default). |
 | `backend.hcl`                        | Shared partial backend config; every stack adds only its `key`. |
 | `foundation/backend.tf`              | Master state backend (`key = foundation/...`). |
+| `foundation/main.tf`                 | Wires the modules + shared app KMS key, GitHub-OIDC provider, and shared least-privilege roles. |
+| `foundation/variables.tf`            | Foundation inputs (region, CIDR, EKS sizing, GitHub OIDC, ECR repos). |
+| `foundation/versions.tf`             | Provider requirements. |
 | `foundation/outputs.tf`              | The inheritance contract. |
+| `foundation/modules/network/`        | VPC, public/private subnets, IGW, NAT, routing (EKS-tagged). |
+| `foundation/modules/eks/`            | EKS cluster, managed node group, IRSA OIDC provider, core addons. |
+| `foundation/modules/openbao/`        | Auto-unseal KMS key, IRSA unseal role, published address. |
+| `foundation/modules/registries/`     | ECR repos + CodeArtifact domain/repos with public-registry proxies. |
 | `consumers/seqtoid-web/backend.tf`   | Example downstream backend (own `key`). |
 | `consumers/seqtoid-web/remote_state.tf` | Example of inheriting foundation outputs. |
 
-## Optional: cross-region replication (DR)
+> The `foundation/` modules are **real** now — the inheritance contract in
+> `outputs.tf` is backed by actual resources, not placeholders. The OpenBao
+> *install* (Helm release, policies, dynamic DB-creds engine) is delivered later
+> by the secrets workstream; the foundation only owns the infra it needs
+> (auto-unseal key, IRSA role) and publishes a stable address.
 
-Add to `bootstrap/` once a destination bucket + replication IAM role exist:
+## Cross-region replication (DR)
 
-```hcl
-resource "aws_s3_bucket_replication_configuration" "tfstate" {
-  bucket = aws_s3_bucket.tfstate.id
-  role   = aws_iam_role.replication.arn
-  rule {
-    id     = "dr"
-    status = "Enabled"
-    destination {
-      bucket        = aws_s3_bucket.tfstate_dr.arn
-      storage_class = "STANDARD"
-    }
-  }
-  depends_on = [aws_s3_bucket_versioning.tfstate]
-}
+Region-loss DR is **committed code**, not a snippet — see `bootstrap/dr.tf`. It's
+gated behind `enable_dr` (default `false`) so the base bootstrap still plans
+clean with no destination required. Turn it on with:
+
+```bash
+cd bootstrap
+tofu apply -var enable_dr=true -var dr_region=us-east-1
 ```
+
+That stands up a versioned, encrypted, locked-down replica bucket + KMS key in
+`dr_region`, the IAM role S3 assumes to replicate, and the replication rule on
+the primary state bucket (KMS-encrypted objects included). Disabled by default
+so nobody pays for a second-region bucket until they ask for it.

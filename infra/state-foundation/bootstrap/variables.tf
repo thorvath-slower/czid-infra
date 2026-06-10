@@ -10,3 +10,16 @@ variable "state_backup_retention_days" {
   type        = number
   default     = 90
 }
+
+# --- Disaster recovery (cross-region replication) ----------------------------
+variable "enable_dr" {
+  description = "Replicate state to a second-region bucket for region-loss DR. Off by default."
+  type        = bool
+  default     = false
+}
+
+variable "dr_region" {
+  description = "Destination region for state replication (used only when enable_dr = true)."
+  type        = string
+  default     = "us-east-1"
+}
