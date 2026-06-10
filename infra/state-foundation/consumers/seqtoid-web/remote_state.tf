@@ -7,7 +7,7 @@
 data "terraform_remote_state" "foundation" {
   backend = "s3"
   config = {
-    bucket = var.state_bucket          # same shared bucket
+    bucket = var.state_bucket # same shared bucket
     key    = "foundation/terraform.tfstate"
     region = var.region
   }

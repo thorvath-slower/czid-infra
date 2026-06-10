@@ -27,7 +27,7 @@ data "aws_region" "current" {}
 
 locals {
   tags          = merge(var.tags, { "Module" = "registries" })
-  registry_host = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com"
+  registry_host = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.region}.amazonaws.com"
 }
 
 # --- ECR ----------------------------------------------------------------------
@@ -72,18 +72,18 @@ resource "aws_ecr_lifecycle_policy" "this" {
 
 # --- CodeArtifact -------------------------------------------------------------
 resource "aws_codeartifact_domain" "this" {
-  domain          = var.codeartifact_domain
-  encryption_key  = var.kms_key_arn
-  tags            = local.tags
+  domain         = var.codeartifact_domain
+  encryption_key = var.kms_key_arn
+  tags           = local.tags
 }
 
 # One upstream "store" repo per ecosystem that mirrors the public registry...
 resource "aws_codeartifact_repository" "upstream" {
-  for_each     = var.package_ecosystems
-  domain       = aws_codeartifact_domain.this.domain
-  repository   = "public-${each.key}"
-  description  = "Proxy of the public ${each.key} registry"
-  tags         = local.tags
+  for_each    = var.package_ecosystems
+  domain      = aws_codeartifact_domain.this.domain
+  repository  = "public-${each.key}"
+  description = "Proxy of the public ${each.key} registry"
+  tags        = local.tags
 
   external_connections {
     external_connection_name = each.value
