@@ -195,8 +195,22 @@ parallel on the SaaS branch.
 1. **SaaS tenancy depth:** `pooled` shared-DB + RLS (efficient, recommended) vs
    schema-per-tenant vs DB-per-tenant (stronger isolation, costlier). RLS is the
    default unless a customer/compliance need forces siloing.
-2. **Appliance pipeline engine:** Argo Workflows vs Cromwell vs miniwdl-on-k8s —
-   needs a spike; it's the portability crux.
+2. **Appliance pipeline engine: DECIDED 2026-06-11 → `miniwdl-on-k8s`.**
+   Rationale: our production runner (SWIPE, `cypherid-workflow-infra/terraform/
+   swipe.tf`) *is* miniwdl wrapped on AWS Batch + Step Functions, so staying on
+   miniwdl keeps the identical WDL dialect, call-cache semantics, and
+   already-validated scientific output — the appliance port becomes "swap the
+   compute backend (Batch → k8s Jobs)," not "re-platform the pipeline." This is
+   the only option that preserves a *single* set of WDL workflows across SaaS and
+   appliance (the portability thesis); it's also the lightest footprint (Python
+   runtime, no JVM/DB engine). Argo Workflows is rejected *as the engine* (it
+   doesn't speak WDL → a second pipeline definition = the fork we forbid), though
+   it may serve as the executor *under* miniwdl. **Cromwell is the named fallback**
+   if miniwdl's k8s backend proves too immature (real WDL engine with k8s
+   backends, at the cost of JVM+DB weight and a workflow re-validation pass).
+   The remaining risk — the k8s backend + the Step-Functions-equivalent control
+   loop (submit/watch/retry/notify the `sfn_execution.rb` seam) — is exactly what
+   the **green-lit-separately spike** must retire before Phase 1 scaffolding.
 3. **MSP hosting:** in the customer's cloud account vs the MSP's account vs both.
 4. **Appliance identity:** keep Auth0 (needs egress) vs self-hosted Keycloak
    (true air-gap).
@@ -212,7 +226,17 @@ parallel on the SaaS branch.
 - **`registries` module** — the artifact-home abstraction (ECR/CodeArtifact ↔
   Artifactory mirror) already profile-aware.
 - **EKS/network/OpenBao foundation modules** — the SaaS substrate; OpenBao is
-  already portable.
+  already portable. *API-endpoint posture DECIDED 2026-06-11 → private endpoint
+  (`endpoint_public_access = false`), pull-based GitOps (in-cluster Argo CD never
+  needs the API to be public), SSM bastion for one-time bootstrap + break-glass.*
+  Chosen because it's lowest-maintenance (no CIDR allowlist drift), smallest
+  attack surface, and the posture that generalizes to the air-gapped appliance —
+  while leaving the **user-facing data plane (internet-facing ALB → Ingress →
+  app pods; browser↔S3 presigned uploads/results) fully public and unaffected.**
+  Implementation is a separate green-lit czid-infra security slice (flip the
+  `endpoint_public_access`/`public_access_cidrs` defaults, add the SSM bastion,
+  extend `enabled_cluster_log_types` to the full five) — not yet built; the
+  default flip must land *with* the bastion to avoid a control-plane lockout.
 - **Digest-pinned, soon-to-be-signed images** (`bug-#012`) — the basis for the
   golden-image + offline-mirror supply chain.
 - **Postgres** (`improvement-#005`) — already off the AWS-only Aurora-MySQL path,
