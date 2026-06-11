@@ -5,6 +5,14 @@ Trivy, tflint, Checkov) across the three IaC repos. Severities are as reported
 by the tools. See [`SECURITY-SCANNING.md`](./SECURITY-SCANNING.md) for how to
 reproduce and triage.
 
+**This file is the summary.** For **every individual finding (729)** — repo,
+full path, line, resource, and remediation:
+- [`SECURITY-FINDINGS-DETAILED.md`](./SECURITY-FINDINGS-DETAILED.md) — itemized
+  register, grouped by repo → check type.
+- `CZ-ID-Security-Findings-Register-2026-06-11.xlsx` (workspace root) — the same
+  729 findings as a sortable/filterable spreadsheet (Findings + Remediation
+  guide + Summary sheets).
+
 > Scope: IaC misconfiguration, secrets, and lint. App-repo (`seqtoid-web` etc.)
 > dependency CVEs are tracked separately (runtime upgrades / Renovate).
 > All scans run with `init -backend=false`-equivalent static analysis — no live
