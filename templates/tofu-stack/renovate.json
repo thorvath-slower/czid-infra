@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "labels": ["dependencies"],
+  "customManagers": [
+    {
+      "description": "Track the OpenTofu version pinned in .opentofu-version",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.opentofu-version$/"],
+      "matchStrings": ["(?<currentValue>.*)"],
+      "depNameTemplate": "opentofu/opentofu",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
