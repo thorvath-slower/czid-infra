@@ -21,6 +21,7 @@ jobs:
     uses: thorvath-slower/ci-workflows/.github/workflows/tofu-ci.yml@v1
     with:
       fmt_path: infra/
+      check_lockfile: true # CZID-30: per-stack provider-lockfile pin gate (folds in former PR #1)
       stacks: |
         infra/state-foundation/bootstrap
         infra/state-foundation/foundation
